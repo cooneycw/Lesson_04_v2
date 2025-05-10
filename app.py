@@ -46,6 +46,11 @@ custom_css = """
     background-color: #ffffff;
 }
 
+/* Add extra bottom padding for plot container to fix cut-off label */
+.plot-container-extra-bottom {
+    padding-bottom: 50px !important;
+}
+
 .interpretation-box {
     margin-top: 20px;
     background-color: #E8F4FD;
@@ -118,6 +123,7 @@ custom_css = """
     font-size: 18px;
     color: #7f8c8d;
     padding: 0 15px;
+    cursor: pointer;
 }
 
 .switch-label.active {
@@ -204,6 +210,124 @@ input:checked + .slider:before {
     font-weight: bold;
     text-shadow: 0 0 5px rgba(155, 89, 182, 0.5);
 }
+
+/* Highlight for premium difference */
+.premium-diff-highlight {
+    background: linear-gradient(to right, #3498DB, #9B59B6);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    font-weight: bold;
+    text-align: center;
+    margin: 10px auto;
+    max-width: 80%;
+}
+
+/* Highlight for "Using values from" text */
+.values-from-highlight {
+    background-color: #3498DB;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+    margin: 10px auto 20px auto;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 80%;
+    max-width: 600px;
+}
+
+/* Value display text */
+.value-display {
+    font-weight: bold;
+    color: #2C3E50;
+    font-size: 16px;
+}
+
+/* Ethics tab styling */
+.ethics-container {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.ethics-intro {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.ethics-question {
+    background-color: #E8F4FD;
+    border-left: 5px solid #3498DB;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.ethics-question p {
+    white-space: normal;  /* Fix for wrapping issues */
+    word-wrap: break-word;
+    margin-bottom: 10px;
+}
+
+.ethics-question-title {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #2C3E50;
+}
+
+.ethical-variable {
+    background-color: rgba(46, 204, 113, 0.2);
+    border-left: 5px solid #2ECC71;
+}
+
+.unethical-variable {
+    background-color: rgba(231, 76, 60, 0.2);
+    border-left: 5px solid #E74C3C;
+}
+
+.ethics-grade {
+    background-color: #E8F8F5;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    border: 1px solid #2ECC71;
+    text-align: center;
+}
+
+.ethics-grade h3 {
+    margin-top: 0;
+    color: #2C3E50;
+}
+
+.ethics-grade span {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2ECC71;
+}
+
+.ethics-feedback {
+    margin-top: 10px;
+    font-style: italic;
+}
+
+.grade-btn {
+    background-color: #2ECC71;
+    border-color: #27AE60;
+    color: white;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.grade-btn:hover {
+    background-color: #27AE60;
+}
 """
 
 
@@ -212,40 +336,48 @@ def driver_toggle_switch():
     # Create a custom toggle switch HTML
     return ui.div(
         {"class": "toggle-container"},
-        ui.div({"class": "toggle-title"}, "Select Good Driver:"),
+        ui.div({"class": "toggle-title"}, "Select Low Risk Driver:"),
         ui.div(
             {"class": "switch-container"},
-            ui.div({"class": "switch-label drake-label", "id": "drake-label"}, "Drake"),
+            ui.div({"class": "switch-label drake-label active", "id": "drake-label",
+                    "onclick": "document.getElementById('toggle_driver').checked = false; $(document).trigger('shiny:inputchanged'); updateLabels();"},
+                   "Drake"),
             ui.div(
                 {"class": "switch"},
-                ui.tags.input({"type": "checkbox", "id": "selected_good_driver", "name": "selected_good_driver",
-                               "value": "kendrick"}),
-                ui.tags.span({"class": "slider round"})
+                ui.tags.input(
+                    {"type": "checkbox", "id": "toggle_driver", "name": "selected_good_driver", "value": "kendrick",
+                     "onchange": "updateLabels();"}),
+                ui.tags.label({"for": "toggle_driver", "class": "slider round"})
             ),
-            ui.div({"class": "switch-label kendrick-label", "id": "kendrick-label"}, "Kendrick")
+            ui.div({"class": "switch-label kendrick-label", "id": "kendrick-label",
+                    "onclick": "document.getElementById('toggle_driver').checked = true; $(document).trigger('shiny:inputchanged'); updateLabels();"},
+                   "Kendrick")
         ),
         # Add JavaScript to handle the toggle and label styling
         ui.tags.script("""
+        function updateLabels() {
+            if($("#toggle_driver").is(":checked")) {
+                // Kendrick is selected
+                $("#drake-label").removeClass("active");
+                $("#kendrick-label").addClass("active");
+                Shiny.setInputValue("selected_good_driver", "kendrick");
+            } else {
+                // Drake is selected
+                $("#drake-label").addClass("active");
+                $("#kendrick-label").removeClass("active");
+                Shiny.setInputValue("selected_good_driver", "drake");
+            }
+        }
+
         $(document).ready(function() {
             // Set initial state
             updateLabels();
 
-            // Update labels when switch changes
-            $("#selected_good_driver").change(function() {
-                updateLabels();
+            // Make sure slider click works
+            $(".slider").click(function(e) {
+                // Don't let event bubble up to prevent double-toggling
+                e.stopPropagation();
             });
-
-            function updateLabels() {
-                if($("#selected_good_driver").is(":checked")) {
-                    // Kendrick is selected
-                    $("#drake-label").removeClass("active");
-                    $("#kendrick-label").addClass("active");
-                } else {
-                    // Drake is selected
-                    $("#drake-label").addClass("active");
-                    $("#kendrick-label").removeClass("active");
-                }
-            }
         });
         """)
     )
@@ -316,14 +448,14 @@ app_ui = ui.page_fluid(
                      ui.row(
                          ui.column(12, driver_toggle_switch())
                      ),
-                     # Sliders row - with dynamic labels
+                     # Sliders row - with dynamic labels (shortened "Estimated" to "Est.")
                      ui.row(
                          ui.column(3,
-                                   ui.input_slider("base_frequency", "Accident Frequency (Good Driver):",
+                                   ui.input_slider("base_frequency", "Est. Accident Frequency (Low Risk):",
                                                    min=0.01, max=0.10, value=0.03, step=0.01)
                                    ),
                          ui.column(3,
-                                   ui.input_slider("base_severity", "Claim Amount (Good Driver):",
+                                   ui.input_slider("base_severity", "Est. Claim Amount (Low Risk):",
                                                    min=2000, max=10000, value=5000, step=500)
                                    ),
                          ui.column(3,
@@ -358,8 +490,8 @@ app_ui = ui.page_fluid(
                                    )
                      ),
                      ui.hr(),
-                     # Main content below with clear separation
-                     ui.div({"class": "plot-container"},
+                     # Main content below with clear separation - ADDED EXTRA BOTTOM PADDING
+                     ui.div({"class": "plot-container plot-container-extra-bottom"},
                             ui.div({"class": "plot-title"}, "Driver Risk Profiles: Frequency vs Claim Amount"),
                             ui.output_plot("driver_comparison_plot", width="100%", height="700px")
                             ),
@@ -380,10 +512,10 @@ app_ui = ui.page_fluid(
                                           )
                                    )
                      ),
-                     # Output text row showing we're using values from previous tab
+                     # Output text row showing we're using values from previous tab - HIGHLIGHTED
                      ui.row(
                          ui.column(12,
-                                   ui.div({"style": "text-align: center; margin-bottom: 20px;"},
+                                   ui.div({"class": "values-from-highlight"},
                                           "Using values from Driver Comparison tab"
                                           )
                                    )
@@ -392,42 +524,228 @@ app_ui = ui.page_fluid(
                      ui.row(
                          ui.column(3,
                                    ui.div({"style": "text-align: center;"},
-                                          ui.strong("Good Driver:"),
+                                          ui.output_ui("premium_first_cohort_label"),
                                           ui.br(),
-                                          ui.output_text("premium_good_driver_info")
+                                          ui.div({"class": "value-display"},
+                                                 ui.output_text("premium_good_driver_info"))
                                           )
                                    ),
                          ui.column(3,
                                    ui.div({"style": "text-align: center;"},
-                                          ui.strong("Good Driver Frequency:"),
+                                          ui.strong("Est. Frequency:"),
                                           ui.br(),
-                                          ui.output_text("premium_good_freq_info")
+                                          ui.div({"class": "value-display"},
+                                                 ui.output_text("premium_good_freq_info"))
                                           )
                                    ),
                          ui.column(3,
                                    ui.div({"style": "text-align: center;"},
-                                          ui.strong("Good Driver Severity:"),
+                                          ui.strong("Est. Severity:"),
                                           ui.br(),
-                                          ui.output_text("premium_good_severity_info")
+                                          ui.div({"class": "value-display"},
+                                                 ui.output_text("premium_good_severity_info"))
                                           )
                                    ),
                          ui.column(3,
                                    ui.div({"style": "text-align: center;"},
-                                          ui.output_text("premium_bad_driver_label"),
+                                          # Using output_ui for HTML content
+                                          ui.output_ui("premium_bad_driver_label"),
                                           ui.br(),
-                                          ui.output_text("premium_bad_info")
+                                          ui.div({"class": "value-display"},
+                                                 ui.output_text("premium_bad_info"))
                                           )
                                    )
                      ),
                      ui.hr(),
-                     # Main content below with clear separation
+                     # Main content below with clear separation - INCREASED HEIGHT BY 100%
                      ui.div({"class": "plot-container"},
                             ui.div({"class": "plot-title"}, "Premium Components and Breakdown"),
-                            ui.output_plot("premium_calc_plot", width="100%", height="600px")
+                            ui.output_plot("premium_calc_plot", width="100%", height="1200px")
+                            # Doubled from 600px to 1200px
                             ),
                      ui.div({"class": "interpretation-box"},
                             ui.tags.pre(ui.output_text("premium_calc_interpretation"))
                             )
+                     ),
+
+        # 4. ETHICS OF RATING MODULE - Updated to replace gender with religion
+        ui.nav_panel("4. Ethics of Rating",
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "title-box"},
+                                          ui.div({"class": "module-description"},
+                                                 "Explore the ethical considerations of using different rating variables in insurance."
+                                                 )
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-container"},
+                                          ui.div({"class": "ethics-intro"},
+                                                 """
+                                                 Insurance pricing relies on risk factors that predict future claims. However, not all potential 
+                                                 rating variables are considered acceptable for use in setting premiums. The appropriate use of 
+                                                 rating variables involves balancing actuarial concerns (like statistical predictive power) 
+                                                 with social considerations (like fairness and potential discrimination).
+   
+                                                 Below are several potential rating variables. For each one, indicate whether you believe 
+                                                 it would be appropriate to use in setting auto insurance rates.
+                                                 """
+                                                 )
+                                          )
+                                   )
+                     ),
+                     # Rating Variables to Evaluate - with ids for color coding
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "drake_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Drake Listeners"),
+                                          ui.p("""Would it be ethical to charge different auto insurance rates based on whether 
+                                          someone primarily listens to Drake's music?"""),
+                                          ui.input_checkbox("drake_rating", "Appropriate to use as a rating variable",
+                                                            value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "kendrick_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Kendrick Listeners"),
+                                          ui.p("""Would it be ethical to charge different auto insurance rates based on whether 
+                                          someone primarily listens to Kendrick Lamar's music?"""),
+                                          ui.input_checkbox("kendrick_rating",
+                                                            "Appropriate to use as a rating variable", value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "age_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Driver Age"),
+                                          ui.p(
+                                              """Would it be ethical to charge different auto insurance rates based on a driver's age?"""),
+                                          ui.input_checkbox("age_rating", "Appropriate to use as a rating variable",
+                                                            value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "vehicle_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Vehicle Type"),
+                                          ui.p("""Would it be ethical to charge different auto insurance rates based on the type 
+                                          of vehicle a person drives (sports car, sedan, SUV, etc.)?"""),
+                                          ui.input_checkbox("vehicle_rating", "Appropriate to use as a rating variable",
+                                                            value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "religion_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Religion"),
+                                          ui.p(
+                                              """Would it be ethical to charge different auto insurance rates based on a person's religion?"""),
+                                          ui.input_checkbox("religion_rating",
+                                                            "Appropriate to use as a rating variable", value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "race_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Race/Ethnicity"),
+                                          ui.p("""Would it be ethical to charge different auto insurance rates based on a person's 
+                                          race or ethnicity?"""),
+                                          ui.input_checkbox("race_rating", "Appropriate to use as a rating variable",
+                                                            value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "experience_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Years of Driving Experience"),
+                                          ui.p("""Would it be ethical to charge different auto insurance rates based on how many 
+                                          years a person has been driving?"""),
+                                          ui.input_checkbox("experience_rating",
+                                                            "Appropriate to use as a rating variable", value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "multiproduct_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Multi-Product Discount"),
+                                          ui.p("""Would it be ethical to offer discounted auto insurance rates to customers who 
+                                          also purchase other insurance products from the same company?"""),
+                                          ui.input_checkbox("multiproduct_rating",
+                                                            "Appropriate to use as a rating variable", value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "speeding_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Speeding Convictions"),
+                                          ui.p("""Would it be ethical to charge different auto insurance rates based on a person's 
+                                          history of speeding tickets and convictions?"""),
+                                          ui.input_checkbox("speeding_rating",
+                                                            "Appropriate to use as a rating variable", value=False)
+                                          )
+                                   )
+                     ),
+                     ui.row(
+                         ui.column(12,
+                                   ui.div({"class": "ethics-question", "id": "driving_rating_block"},
+                                          ui.div({"class": "ethics-question-title"}, "Driving History"),
+                                          ui.p("""Would it be ethical to charge different auto insurance rates based on a person's 
+                                          past driving record (accidents, tickets, etc.)?"""),
+                                          ui.input_checkbox("driving_rating", "Appropriate to use as a rating variable",
+                                                            value=False)
+                                          )
+                                   )
+                     ),
+                     # Grade Button
+                     ui.row(
+                         ui.column(4),  # For spacing
+                         ui.column(4,
+                                   ui.div({"class": "center-button"},
+                                          ui.input_action_button("grade_ethics", "Grade My Answers",
+                                                                 class_="btn-resim grade-btn")
+                                          )
+                                   ),
+                         ui.column(4)  # For spacing
+                     ),
+                     # Grade Results (initially hidden)
+                     ui.row(
+                         ui.column(12, ui.output_ui("ethics_grade_output"))
+                     ),
+                     # Add JavaScript for color coding - updated to replace gender with religion
+                     ui.tags.script("""
+                    $(document).ready(function() {
+                        $('#grade_ethics').click(function() {
+                            // Wait a moment for the grade to be calculated
+                            setTimeout(function() {
+                                // Remove any existing coloring
+                                $('.ethics-question').removeClass('ethical-variable unethical-variable');
+
+                                // Color the blocks based on correct answers
+                                $('#drake_rating_block').addClass('unethical-variable');
+                                $('#kendrick_rating_block').addClass('unethical-variable');
+                                $('#age_rating_block').addClass('ethical-variable');
+                                $('#vehicle_rating_block').addClass('ethical-variable');
+                                $('#religion_rating_block').addClass('unethical-variable');
+                                $('#race_rating_block').addClass('unethical-variable');
+                                $('#experience_rating_block').addClass('ethical-variable');
+                                $('#multiproduct_rating_block').addClass('ethical-variable');
+                                $('#speeding_rating_block').addClass('ethical-variable');
+                                $('#driving_rating_block').addClass('ethical-variable');
+                            }, 500);
+                        });
+                    });
+                    """)
                      )
     )
 )
@@ -442,8 +760,8 @@ def server(input, output, session):
     # Helper function to get the selected good driver
     @reactive.Calc
     def get_good_driver():
-        # Check if the checkbox is checked (true = kendrick, false = drake)
-        return "kendrick" if input.selected_good_driver() else "drake"
+        # Get the value from the selected_good_driver input
+        return input.selected_good_driver()
 
     # Helper function to get the bad driver name
     def get_bad_driver_name():
@@ -465,23 +783,31 @@ def server(input, output, session):
         driver_sim_offset.set(new_offset)
         print(f"Driver comparison seed offset updated to: {new_offset}")
 
-    # Dynamic labels for bad driver
+    # Dynamic labels for second cohort
     @output
     @render.text
     def bad_driver_freq_label():
         bad_driver = get_bad_driver_name()
-        return f"{bad_driver} Driving Frequency Multiplier:"
+        return f"{bad_driver} Cohort Frequency Multiplier:"
 
     @output
     @render.text
     def bad_driver_severity_label():
         bad_driver = get_bad_driver_name()
-        return f"{bad_driver} Claim Amount Multiplier:"
+        return f"{bad_driver} Cohort Claim Amount Multiplier:"
+
+    # Using render.ui for HTML content - now with specific cohort names
+    @output
+    @render.ui
+    def premium_bad_driver_label():
+        bad_driver = get_bad_driver_name()
+        return ui.strong(f"{bad_driver} Cohort:")
 
     @output
-    @render.text
-    def premium_bad_driver_label():
-        return f"<strong>{get_bad_driver_name()} Values:</strong>"
+    @render.ui
+    def premium_first_cohort_label():
+        good_driver = get_good_driver().capitalize()
+        return ui.strong(f"{good_driver} Cohort:")
 
     # Reactive calculations for seed values
     @reactive.Calc
@@ -582,20 +908,24 @@ def server(input, output, session):
         good_driver = get_good_driver().capitalize()
         bad_driver = get_bad_driver_name()
 
+        # Use specific cohort names
+        first_cohort = f"{good_driver} Cohort"
+        second_cohort = f"{bad_driver} Cohort"
+
         text = "Risk Profile Interpretation:\n"
-        text += f"• {good_driver} (Good Driver) has an average accident frequency of {stats['good_avg_frequency']:.1%} and an average claim amount of ${stats['good_avg_severity']:,.0f}\n"
-        text += f"• {bad_driver} (Bad Driver) has an average accident frequency of {stats['bad_avg_frequency']:.1%} and an average claim amount of ${stats['bad_avg_severity']:,.0f}\n\n"
+        text += f"• {first_cohort} has an est. accident frequency of {stats['good_avg_frequency']:.1%} and an est. average claim amount of ${stats['good_avg_severity']:,.0f}\n"
+        text += f"• {second_cohort} has an est. accident frequency of {stats['bad_avg_frequency']:.1%} and an est. average claim amount of ${stats['bad_avg_severity']:,.0f}\n\n"
 
-        text += f"• Frequency Difference: {bad_driver} has {stats['freq_multiplier']:.1f}x more frequent accidents than {good_driver}\n"
-        text += f"• Claim Amount Difference: {bad_driver}'s claims are {stats['severity_multiplier']:.1f}x more costly than {good_driver}'s claims\n\n"
+        text += f"• Frequency Difference: {second_cohort} has {stats['freq_multiplier']:.1f}x more frequent accidents than {first_cohort}\n"
+        text += f"• Claim Amount Difference: {second_cohort}'s claims are {stats['severity_multiplier']:.1f}x more costly than {first_cohort}'s claims\n\n"
 
-        text += f"• Expected Annual Cost - {good_driver}: ${stats['good_avg_frequency'] * stats['good_avg_severity']:,.0f} per driver\n"
-        text += f"• Expected Annual Cost - {bad_driver}: ${stats['bad_avg_frequency'] * stats['bad_avg_severity']:,.0f} per driver\n"
-        text += f"• Overall Risk Difference: {bad_driver} generates {stats['loss_multiplier']:.1f}x more in expected losses\n\n"
+        text += f"• Expected Annual Cost - {first_cohort}: ${stats['good_avg_frequency'] * stats['good_avg_severity']:,.0f} per driver\n"
+        text += f"• Expected Annual Cost - {second_cohort}: ${stats['bad_avg_frequency'] * stats['bad_avg_severity']:,.0f} per driver\n"
+        text += f"• Overall Risk Difference: {second_cohort} generates {stats['loss_multiplier']:.1f}x more in expected losses\n\n"
 
-        text += "• Key Insight: The scatterplot illustrates why insurance companies segment drivers into risk groups.\n"
-        text += "  Both frequency and claim amounts contribute to the overall cost differences between driver groups.\n"
-        text += "  Each dot represents an individual driver's risk profile, showing natural variation within groups."
+        text += "• Key Insight: The scatterplot illustrates why insurance companies segment drivers into risk cohorts.\n"
+        text += "  Both frequency and claim amounts contribute to the overall cost differences between driver cohorts.\n"
+        text += "  Each dot represents an individual driver's risk profile, showing natural variation within cohorts."
 
         return text
 
@@ -666,21 +996,25 @@ def server(input, output, session):
         good_driver = get_good_driver().capitalize()
         bad_driver = get_bad_driver_name()
 
+        # Use specific cohort names
+        first_cohort = f"{good_driver} Cohort"
+        second_cohort = f"{bad_driver} Cohort"
+
         expense_ratio = 0.25
         risk_margin_ratio = 0.05
 
         text = "Insurance Premium Comparison:\n"
-        text += f"• {good_driver} (Good Driver):\n"
-        text += f"  - Accident Frequency: {good_freq:.1%} (probability of claim per year)\n"
-        text += f"  - Average Claim Severity: ${good_severity:,.0f} (average cost when a claim occurs)\n"
+        text += f"• {first_cohort}:\n"
+        text += f"  - Est. Accident Frequency: {good_freq:.1%} (probability per year)\n"
+        text += f"  - Est. Average Claim Severity: ${good_severity:,.0f} (average cost when a claim occurs)\n"
         text += f"  - Expected Loss: ${stats['expected_loss']:,.2f} (frequency × severity)\n"
         text += f"  - Expenses: ${stats['expenses']:,.2f} ({expense_ratio:.0%} of premium)\n"
         text += f"  - Risk Margin: ${stats['risk_margin']:,.2f} ({risk_margin_ratio:.0%} of premium)\n"
         text += f"  - Final Premium: ${stats['premium']:,.2f}\n\n"
 
-        text += f"• {bad_driver} (Bad Driver):\n"
-        text += f"  - Accident Frequency: {bad_freq:.1%} (probability of claim per year)\n"
-        text += f"  - Average Claim Severity: ${bad_severity:,.0f} (average cost when a claim occurs)\n"
+        text += f"• {second_cohort}:\n"
+        text += f"  - Est. Accident Frequency: {bad_freq:.1%} (probability per year)\n"
+        text += f"  - Est. Average Claim Severity: ${bad_severity:,.0f} (average cost when a claim occurs)\n"
         text += f"  - Expected Loss: ${stats['expected_loss_bad']:,.2f} (frequency × severity)\n"
         text += f"  - Expenses: ${stats['expenses_bad']:,.2f} ({expense_ratio:.0%} of premium)\n"
         text += f"  - Risk Margin: ${stats['risk_margin_bad']:,.2f} ({risk_margin_ratio:.0%} of premium)\n"
@@ -689,15 +1023,101 @@ def server(input, output, session):
         premium_diff = stats['premium_bad'] - stats['premium']
         premium_ratio = stats['premium_bad'] / stats['premium']
 
-        text += f"• Premium Difference: ${premium_diff:,.2f} ({premium_ratio:.1f}x higher for {bad_driver})\n\n"
+        text += f"• Premium Difference: ${premium_diff:,.2f} ({premium_ratio:.1f}x higher for {second_cohort})\n\n"
 
         text += "• Key Insights:\n"
         text += f"  1. The premium calculation formula is: Premium = Expected Loss / (1 - Expense Ratio - Risk Margin)\n"
         text += f"  2. Both frequency and severity directly affect the premium - if either doubles, expected loss doubles\n"
-        text += f"  3. A driver with {premium_ratio:.1f}x higher risk pays {premium_ratio:.1f}x higher premium\n"
-        text += f"  4. The expense and risk margin components are proportionally larger for higher-risk drivers\n"
+        text += f"  3. A driver cohort with {premium_ratio:.1f}x higher risk pays {premium_ratio:.1f}x higher premium\n"
+        text += f"  4. The expense and risk margin components are proportionally larger for higher-risk driver cohorts\n"
 
         return text
+
+    # Ethics Rating Module - Updated to replace gender with religion
+    @reactive.Calc
+    def calculate_ethics_grade():
+        # These are the "model answers" based on general insurance standards
+        model_answers = {
+            'drake_rating': False,  # Not appropriate to use Drake listening as a rating factor
+            'kendrick_rating': False,  # Not appropriate to use Kendrick listening as a rating factor
+            'age_rating': True,  # Age is a commonly used rating factor
+            'vehicle_rating': True,  # Vehicle type is a commonly used rating factor
+            'religion_rating': False,  # Religion is not appropriate
+            'race_rating': False,  # Race/ethnicity is not appropriate
+            'experience_rating': True,  # Years of driving experience is a valid rating factor
+            'multiproduct_rating': True,  # Multi-product discount is a common and accepted practice
+            'speeding_rating': True,  # Speeding convictions are directly related to driving risk
+            'driving_rating': True,  # Driving history is universally used
+        }
+
+        # Count correct answers
+        correct = 0
+        total = len(model_answers)
+
+        # Track incorrect answers
+        incorrect = []
+
+        for var, model_answer in model_answers.items():
+            user_answer = getattr(input, var)()
+            if user_answer == model_answer:
+                correct += 1
+            else:
+                # Format the variable name for displaying
+                var_formatted = var.replace('_rating', '').replace('_', ' ').title()
+                incorrect.append(var_formatted)
+
+        # Calculate score out of 10
+        score = round(correct / total * 10)
+
+        # Generate feedback based on score
+        if score >= 9:
+            feedback = "Excellent! You have a strong understanding of ethical rating considerations."
+        elif score >= 7:
+            feedback = "Good work! You understand most of the key ethical rating principles."
+        elif score >= 5:
+            feedback = "You're on the right track. Consider how these variables relate to risk vs. potential discrimination."
+        else:
+            feedback = "Consider reviewing how insurers balance predictive value with social fairness."
+
+        # Add specific feedback if there were incorrect answers
+        if incorrect:
+            feedback += f" You might want to reconsider your answers for: {', '.join(incorrect)}."
+
+        return score, feedback, correct, total
+
+    # Display ethics grade output
+    @output
+    @render.ui
+    @reactive.event(input.grade_ethics)
+    def ethics_grade_output():
+        score, feedback, correct, total = calculate_ethics_grade()
+
+        return ui.div(
+            {"class": "ethics-grade"},
+            ui.h3("Your Rating Ethics Score:"),
+            ui.span(f"{score}/10"),
+            ui.p(f"You got {correct} out of {total} correct."),
+            ui.div({"class": "ethics-feedback"}, feedback),
+            ui.br(),
+            ui.p("""
+            Key considerations for rating variables include:
+            • Actuarial justification (statistical correlation with risk)
+            • Causality vs. correlation
+            • Controllability (can a person change this factor?)
+            • Social acceptability and potential for discrimination
+            • Legality (some factors are prohibited by law in many jurisdictions)
+            """),
+            ui.HTML("""
+        <p><b>Ethical rating variables</b> (shown in <span style="color: #2ECC71">green</span>) typically have direct causal 
+        relationships with risk and are often within the driver's control. These include driving history, 
+        speeding convictions, vehicle type, and years of experience.</p>
+        """),
+            ui.HTML("""
+        <p><b>Unethical rating variables</b> (shown in <span style="color: #E74C3C">red</span>) are usually 
+        discriminatory, outside a person's control, or lack direct causal links to driving behavior.
+        These include race/ethnicity, religion, and music preferences.  Regulations prohibit their usage in rating.</p>
+        """)
+        )
 
 
 # Create and run the app
