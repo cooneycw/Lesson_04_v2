@@ -6,7 +6,8 @@ from scipy.stats import lognorm
 
 
 def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_driver_freq_multiplier=3.0,
-                                  bad_driver_severity_multiplier=2.0, seed=42, return_fig=False):
+                                  bad_driver_severity_multiplier=2.0, seed=42, return_fig=False,
+                                  good_driver_image="drake.jpeg"):
     """
     Demonstrates the difference in outcomes between good and bad drivers
 
@@ -24,6 +25,8 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
         Random seed for reproducibility
     return_fig : bool
         If True, returns the figure and stats for Shiny integration
+    good_driver_image : str
+        Image filename to use for the good driver (either "drake.jpeg" or "kendrick.jpeg")
 
     Returns:
     --------
@@ -35,6 +38,10 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
     # Set random seed for reproducibility
     np.random.seed(seed)
 
+    # Extract driver names from image filename
+    good_driver_name = good_driver_image.split('.')[0].capitalize()
+    bad_driver_name = "Kendrick" if good_driver_name == "Drake" else "Drake"
+
     # Define parameters for each driver type
     bad_driver_frequency = base_frequency * bad_driver_freq_multiplier
     bad_driver_severity = base_severity * bad_driver_severity_multiplier
@@ -43,16 +50,7 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
     num_good_drivers = 200
     num_bad_drivers = 200
 
-    # Generate individual driver risk characteristics
-    # For each driver, generate their individual frequency and severity parameters
-    # This creates more realistic clusters with natural variation within groups
-
     # Parameters for lognormal distribution
-    # For frequency, we'll use a normal distribution around the base rates
-    # For severity, we'll use a lognormal distribution with appropriate parameters
-
-    # Calculate lognormal parameters for severity
-    # sigma controls the spread, mu controls the center of the lognormal distribution
     good_sigma = 0.4  # Smaller sigma for good drivers (less variance)
     bad_sigma = 0.6  # Larger sigma for bad drivers (more variance)
 
@@ -61,7 +59,6 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
     bad_mu = np.log(bad_driver_severity) - 0.5 * bad_sigma ** 2
 
     # Generate individual driver frequencies
-    # Using normal distribution with truncation at 0 (since frequency can't be negative)
     good_driver_frequencies = np.random.normal(base_frequency, base_frequency * 0.3, num_good_drivers)
     good_driver_frequencies = np.maximum(good_driver_frequencies, 0.001)  # Minimum 0.1% frequency
 
@@ -84,8 +81,8 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
 
     # For Shiny integration
     if return_fig:
-        # Create figure
-        fig = Figure(figsize=(14, 10))
+        # Create figure - NARROWED BY 25%
+        fig = Figure(figsize=(10.5, 10))  # Changed from 14 to 10.5 width (25% reduction)
 
         # Create subplots - just use one main plot and one for statistics
         ax1 = fig.add_subplot(111)  # Main scatterplot
@@ -102,7 +99,7 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
             color='green',
             alpha=0.7,
             s=70,
-            label='Good Drivers',
+            label=f'{good_driver_name} (Good Driver)',
             edgecolors='darkgreen'
         )
 
@@ -113,7 +110,7 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
             color='red',
             alpha=0.7,
             s=70,
-            label='Bad Drivers',
+            label=f'{bad_driver_name} (Bad Driver)',
             edgecolors='darkred'
         )
 
@@ -124,7 +121,7 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
             color='darkgreen',
             s=150,
             marker='*',
-            label='Good Driver Average'
+            label=f'{good_driver_name} Average'
         )
 
         ax1.scatter(
@@ -133,7 +130,7 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
             color='darkred',
             s=150,
             marker='*',
-            label='Bad Driver Average'
+            label=f'{bad_driver_name} Average'
         )
 
         # Add frequency and severity lines for reference
@@ -144,9 +141,10 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
         ax1.axhline(y=bad_driver_severity, color='lightcoral', linestyle='--', alpha=0.5)
 
         # Annotations for the lines
-        ax1.text(base_frequency, ax1.get_ylim()[0] * 1.05, f"Good Driver Frequency: {base_frequency:.1%}",
+        ax1.text(base_frequency, ax1.get_ylim()[0] * 1.05, f"{good_driver_name} Frequency: {base_frequency:.1%}",
                  color='darkgreen', ha='center', va='bottom', rotation=90)
-        ax1.text(bad_driver_frequency, ax1.get_ylim()[0] * 1.05, f"Bad Driver Frequency: {bad_driver_frequency:.1%}",
+        ax1.text(bad_driver_frequency, ax1.get_ylim()[0] * 1.05,
+                 f"{bad_driver_name} Frequency: {bad_driver_frequency:.1%}",
                  color='darkred', ha='center', va='bottom', rotation=90)
 
         # Format axes
@@ -162,26 +160,28 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
         # Set y-axis format to display dollar amounts
         ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
 
-        # Add summary statistics in a box
+        # Add summary statistics in a box - MOVED TO NOT OVERLAP WITH CHART
         summary_text = (
             f"Risk Profile Comparison\n\n"
-            f"Good Drivers:\n"
+            f"{good_driver_name} (Good Driver):\n"
             f"• Avg Frequency: {good_avg_frequency:.1%}\n"
-            f"• Avg Claim Amount: ${good_avg_severity:.0f}\n"
+            f"• Avg Claim Amount: ${good_avg_severity:,.0f}\n"
             f"• Total Expected Loss: ${good_total_losses:,.0f}\n\n"
-            f"Bad Drivers:\n"
+            f"{bad_driver_name} (Bad Driver):\n"
             f"• Avg Frequency: {bad_avg_frequency:.1%} ({bad_avg_frequency / good_avg_frequency:.1f}x higher)\n"
-            f"• Avg Claim Amount: ${bad_avg_severity:.0f} ({bad_avg_severity / good_avg_severity:.1f}x higher)\n"
+            f"• Avg Claim Amount: ${bad_avg_severity:,.0f} ({bad_avg_severity / good_avg_severity:.1f}x higher)\n"
             f"• Total Expected Loss: ${bad_total_losses:,.0f} ({bad_total_losses / good_total_losses:.1f}x higher)"
         )
 
-        # Place text box at the top right
-        fig.text(0.95, 0.95, summary_text, fontsize=12,
-                 verticalalignment='top', horizontalalignment='right',
-                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7))
+        # Place text box on the right side (LEFT JUSTIFIED)
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.7)
+        ax1.text(1.05, 0.5, summary_text, fontsize=12,
+                 verticalalignment='center', horizontalalignment='left',
+                 bbox=props, transform=ax1.transAxes)
 
-        # Adjust layout
-        fig.tight_layout(rect=[0, 0, 0.85, 0.95])
+        # Adjust layout to make space for the text box
+        fig.tight_layout()
+        fig.subplots_adjust(right=0.75)  # Make room for the summary box on the right
 
         # Stats to return
         stats = {
@@ -193,7 +193,10 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
             'bad_total_losses': bad_total_losses,
             'loss_multiplier': bad_total_losses / good_total_losses,
             'freq_multiplier': bad_avg_frequency / good_avg_frequency,
-            'severity_multiplier': bad_avg_severity / good_avg_severity
+            'severity_multiplier': bad_avg_severity / good_avg_severity,
+            'good_driver_image': good_driver_image,
+            'good_driver_name': good_driver_name,
+            'bad_driver_name': bad_driver_name
         }
 
         return fig, stats
@@ -209,8 +212,8 @@ def demonstrate_driver_comparison(base_frequency=0.05, base_severity=8000, bad_d
 
         # Print statistics
         print("\nDriver Comparison Interpretation:")
-        print(f"• Good Drivers: {good_avg_frequency:.1%} accident rate, ${good_avg_severity:.2f} avg severity")
-        print(f"• Bad Drivers: {bad_avg_frequency:.1%} accident rate, ${bad_avg_severity:.2f} avg severity")
-        print(f"• Good drivers total loss: ${good_total_losses:,.0f}")
+        print(f"• {good_driver_name}: {good_avg_frequency:.1%} accident rate, ${good_avg_severity:,.2f} avg severity")
+        print(f"• {bad_driver_name}: {bad_avg_frequency:.1%} accident rate, ${bad_avg_severity:,.2f} avg severity")
+        print(f"• {good_driver_name} total loss: ${good_total_losses:,.0f}")
         print(
-            f"• Bad drivers total loss: ${bad_total_losses:,.0f} ({bad_total_losses / good_total_losses:.1f}x higher)")
+            f"• {bad_driver_name} total loss: ${bad_total_losses:,.0f} ({bad_total_losses / good_total_losses:.1f}x higher)")
