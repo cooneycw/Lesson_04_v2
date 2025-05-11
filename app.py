@@ -1094,7 +1094,7 @@ def server(input, output, session):
 
         return ui.div(
             {"class": "ethics-grade"},
-            ui.h3("Your Rating Ethics Score:"),
+            ui.h3("Your Rating Variable Score:"),
             ui.span(f"{score}/10"),
             ui.p(f"You got {correct} out of {total} correct."),
             ui.div({"class": "ethics-feedback"}, feedback),
