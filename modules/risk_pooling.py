@@ -56,7 +56,9 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
         ax2 = fig.add_subplot(122)
 
         # Plot 1: Individual outcomes with improved visualization
-        display_n = min(50, num_policyholders)
+        # Always show all policyholders for complete consistency with pooled outcomes
+        display_n = num_policyholders
+        outcomes_label = f'Individual outcomes (n={display_n})'
 
         # Blue bar chart for individual outcomes
         ax1.bar(
@@ -82,7 +84,7 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
             y_positions,
             color='blue',
             alpha=0.7,
-            label=f'Individual outcomes (n={display_n})'
+            label=outcomes_label
         )
 
         # Add a bar for premium with insurance
@@ -95,9 +97,13 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
             label='Insurance premium'
         )
 
+        # Calculate statistics for displayed individuals only
+        displayed_accidents = accidents[:display_n]
+        displayed_with_loss = np.sum(displayed_accidents)
+        
         # Annotation showing how many people experienced a loss
         ax1.annotate(
-            f"{num_with_loss} out of {num_policyholders} people\nexperienced a ${CLAIM_AMOUNT:,} loss",
+            f"{displayed_with_loss} out of {display_n} people\nexperienced a ${CLAIM_AMOUNT:,} loss",
             xy=(0, CLAIM_AMOUNT / 2),
             xytext=(0, CLAIM_AMOUNT * 0.7),
             ha='center',
@@ -159,12 +165,17 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
         # fig.text(0.5, 0.01, f"Simulation Seed: {seed}", ha='center',
         #          fontsize=12, bbox=dict(facecolor='lightgray', alpha=0.5))
 
-        fig.tight_layout()
+        # Use subplots_adjust for more reliable layout
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.1, wspace=0.3)
 
         # Return the figure and key statistics
+        displayed_percent_with_loss = (displayed_with_loss / display_n) * 100 if display_n > 0 else 0
         stats = {
             'num_with_loss': num_with_loss,
             'percent_with_loss': percent_with_loss,
+            'displayed_num_with_loss': displayed_with_loss,
+            'displayed_percent_with_loss': displayed_percent_with_loss,
+            'display_n': display_n,
             'fair_premium': fair_premium,
             'total_losses': total_losses,
             'pool_premium_total': pool_premium_total,
@@ -180,11 +191,9 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
 
         # Plot 1: Individual outcomes with improved visualization
-        display_n = min(50, num_policyholders)
-
-        # Create a categorical plot to better show binary outcomes
-        categories = ['No Loss', 'Loss']
-        counts = [display_n - np.sum(accidents[:display_n]), np.sum(accidents[:display_n])]
+        # Always show all policyholders for complete consistency with pooled outcomes
+        display_n = num_policyholders
+        outcomes_label = f'Individual outcomes (n={display_n})'
 
         # Blue bar chart for individual outcomes
         ax1.bar(
@@ -210,7 +219,7 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
             y_positions,
             color='blue',
             alpha=0.7,
-            label=f'Individual outcomes (n={display_n})'
+            label=outcomes_label
         )
 
         # Add a bar for premium with insurance
@@ -223,9 +232,13 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
             label='Insurance premium'
         )
 
+        # Calculate statistics for displayed individuals only
+        displayed_accidents = accidents[:display_n]
+        displayed_with_loss = np.sum(displayed_accidents)
+        
         # Annotation showing how many people experienced a loss
         ax1.annotate(
-            f"{num_with_loss} out of {num_policyholders} people\nexperienced a ${CLAIM_AMOUNT:,} loss",
+            f"{displayed_with_loss} out of {display_n} people\nexperienced a ${CLAIM_AMOUNT:,} loss",
             xy=(0, CLAIM_AMOUNT / 2),
             xytext=(0, CLAIM_AMOUNT * 0.7),
             ha='center',
@@ -274,7 +287,8 @@ def demonstrate_risk_pooling(accident_probability=0.05, num_policyholders=100, s
         fig.text(0.5, 0.01, f"Simulation Seed: {seed}", ha='center',
                  fontsize=12, bbox=dict(facecolor='lightgray', alpha=0.5))
 
-        plt.tight_layout()
+        # Use subplots_adjust for more reliable layout
+        plt.subplots_adjust(left=0.08, right=0.95, top=0.9, bottom=0.15, wspace=0.3)
         plt.show()
 
         # Display insurance interpretation

@@ -862,7 +862,7 @@ def server(input, output, session):
 
         text = "Insurance Interpretation:\n"
         text += f"• Individual Risk: Each person has a {input.accident_probability():.1%} chance of a ${claim_amount:,.0f} loss.\n"
-        text += f"• Without Insurance: {stats['num_with_loss']} people ({stats['percent_with_loss']:.1f}%) faced a ${claim_amount:,.0f} loss in this simulation.\n"
+        text += f"• Without Insurance: {stats['displayed_num_with_loss']} out of {stats['display_n']} people ({stats['displayed_percent_with_loss']:.1f}%) faced a ${claim_amount:,.0f} loss.\n"
         text += f"• With Insurance: Everyone pays a premium of ${stats['fair_premium']:,.0f}.\n"
         text += f"• Risk Pooling Result: The insurer collected ${stats['pool_premium_total']:,.0f} and paid ${stats['total_losses']:,.0f} in claims.\n"
 
